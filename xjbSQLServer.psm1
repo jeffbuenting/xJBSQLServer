@@ -20,10 +20,17 @@ Class xSQLNetworkProtocol
     # ----- Gets the info
     [xSQLNetworkProtocol] Get()
     {  
-        $This.Protocol = (Get-SQLNetworkProtocol | where IsEnabled -eq $True).Name
-        $This.InstanceName = "MSSQLServer"
+        Try {
+            $This.Protocol = (Get-SQLNetworkProtocol -ErrorAction Stop | where IsEnabled -eq $True).Name
+            $This.InstanceName = "MSSQLServer"
 
-        Return $This
+            Return $This
+        }
+        Catch {
+            $EXceptionMessage = $_.Exception.Message
+            $ExceptionType = $_.exception.GetType().fullname
+            Throw "xSQLNetworkProtocol Get : There was an error in retrieving the SQL Network Protocol.`n`n     $ExceptionMessage`n`n     Exception : $ExceptionType" 
+        }
     }
 
     # ----- Test to check if protocols are installed and wether they should be
@@ -34,9 +41,8 @@ Class xSQLNetworkProtocol
 
         if ( $This.Ensure -eq 'Present' ) 
         {
-            try 
-            {
-                $SQLProtocols = Get-SQLNetworkProtocol -Protocol $This.Protocol 
+            try {
+                $SQLProtocols = Get-SQLNetworkProtocol -Protocol $This.Protocol -ErrorAction Stop
 
                 write-Verbose "$($SQLProtocols.Name | Out-Null)"
                 Foreach ( $P in $SQLProtocols ) 
@@ -65,7 +71,7 @@ Class xSQLNetworkProtocol
             Write-Verbose "Checking if $($This.Protocol) are disabled"
             Try 
             {
-               $SQLProtocols = Get-SQLNetworkProtocol -Protocol $This.Protocol 
+               $SQLProtocols = Get-SQLNetworkProtocol -Protocol $This.Protocol -ErrorAction Stop
 
                 write-Verbose "$($SQLProtocols.Name | Out-Null)"
                 Foreach ( $P in $SQLProtocols ) 
@@ -105,15 +111,29 @@ Class xSQLNetworkProtocol
         {
             Foreach ( $P in $This.Protocol ) 
             {
-                Write-verbose "Enabling $($This.Protocol)"
-                Set-SQLNetworkProtocol -Protocol $P -Enable $True
+                Try {
+                    Write-verbose "Enabling $($This.Protocol)"
+                    Set-SQLNetworkProtocol -Protocol $P -Enable $True -ErrorAction Stop
+                }
+                 Catch {
+                    $EXceptionMessage = $_.Exception.Message
+                    $ExceptionType = $_.exception.GetType().fullname
+                    Throw "xSQLNetworkProtocol Set : There was an error in Enabling the SQL Network Protocol, $P.`n`n     $ExceptionMessage`n`n     Exception : $ExceptionType" 
+                }
             }
         }
         Else {
             Foreach ( $P in $This.Protocol ) 
             {
-                Write-Verbose "Disabling $($This.Protocol)"
-                Set-SQLNetworkProtocol -Protocol $P -Enable $False
+                Try {
+                    Write-Verbose "Disabling $($This.Protocol)"
+                    Set-SQLNetworkProtocol -Protocol $P -Enable $False -ErrorAction Stop
+                }
+                Catch {
+                    $EXceptionMessage = $_.Exception.Message
+                    $ExceptionType = $_.exception.GetType().fullname
+                    Throw "xSQLNetworkProtocol Set : There was an error in Disabling the SQL Network Protocol, $P.`n`n     $ExceptionMessage`n`n     Exception : $ExceptionType" 
+                }
             }
         }
     }
